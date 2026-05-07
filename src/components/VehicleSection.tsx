@@ -1,6 +1,7 @@
 "use client";
 
 import { useFormContext } from "react-hook-form";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -14,12 +15,29 @@ const VEHICLE_BRANDS = [
   "Alfa Romeo", "Audi", "BMW", "Citroën", "Dacia", "Fiat", "Ford",
   "Honda", "Hyundai", "Kia", "Mazda", "Mercedes-Benz", "Mitsubishi",
   "Nissan", "Opel", "Peugeot", "Renault", "Seat", "Skoda", "Subaru",
-  "Suzuki", "Toyota", "Volkswagen", "Volvo", "Inna",
+  "Suzuki", "Toyota", "Volkswagen", "Volvo",
 ] as const;
+
+const OTHER = "__other__";
 
 export function VehicleSection() {
   const { t } = useI18n();
-  const { register, setValue, formState: { errors } } = useFormContext<ReportFormData>();
+  const { register, setValue, getValues, formState: { errors } } = useFormContext<ReportFormData>();
+  const [selectedBrand, setSelectedBrand] = useState(() => {
+    const brand = getValues("brand");
+    return VEHICLE_BRANDS.includes(brand as typeof VEHICLE_BRANDS[number]) ? brand : brand ? OTHER : "";
+  });
+  const [selectedYear, setSelectedYear] = useState(() => getValues("year") ?? "");
+
+  function handleBrandSelect(v: string | null) {
+    const val = v ?? "";
+    setSelectedBrand(val);
+    if (val !== OTHER) {
+      setValue("brand", val, { shouldValidate: true });
+    } else {
+      setValue("brand", "", { shouldValidate: false });
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -27,7 +45,7 @@ export function VehicleSection() {
 
         <div className="space-y-1">
           <Label htmlFor="brand">{t("vehicleBrand")}</Label>
-          <Select onValueChange={(v: string | null) => setValue("brand", v ?? "", { shouldValidate: true })}>
+          <Select value={selectedBrand} onValueChange={handleBrandSelect}>
             <SelectTrigger id="brand">
               <SelectValue placeholder={t("vehicleBrandPlaceholder")} />
             </SelectTrigger>
@@ -35,8 +53,17 @@ export function VehicleSection() {
               {VEHICLE_BRANDS.map((b) => (
                 <SelectItem key={b} value={b}>{b}</SelectItem>
               ))}
+              <SelectItem value={OTHER}>{t("vehicleBrandOther")}</SelectItem>
             </SelectContent>
           </Select>
+          {selectedBrand === OTHER && (
+            <Input
+              className="mt-1.5"
+              placeholder={t("vehicleBrandOtherPlaceholder")}
+              autoFocus
+              onChange={(e) => setValue("brand", e.target.value, { shouldValidate: true })}
+            />
+          )}
           {errors.brand && <p className="text-xs text-destructive">{errors.brand.message}</p>}
         </div>
 
@@ -51,7 +78,7 @@ export function VehicleSection() {
             {t("vehicleYear")}{" "}
             <Badge variant="secondary" className="text-xs ml-1">{t("optional")}</Badge>
           </Label>
-          <Select onValueChange={(v: string | null) => setValue("year", v ?? "")}>
+          <Select value={selectedYear} onValueChange={(v: string | null) => { const val = v ?? ""; setSelectedYear(val); setValue("year", val); }}>
             <SelectTrigger id="year">
               <SelectValue placeholder={t("vehicleYearPlaceholder")} />
             </SelectTrigger>

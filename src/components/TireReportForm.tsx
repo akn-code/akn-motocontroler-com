@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { reportSchema, ReportFormData } from "@/lib/schema";
-import { saveToHistory } from "@/lib/history";
+import { saveToHistory, loadHistory, HistoryEntry } from "@/lib/history";
 import { useI18n } from "@/lib/i18n-context";
 import { VehicleSection } from "./VehicleSection";
 import { TireSection } from "./TireSection";
+import { ReportHistory } from "./ReportHistory";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle2, Loader2, RotateCcw, Send } from "lucide-react";
@@ -28,6 +29,10 @@ export function TireReportForm() {
   const [formState, setFormState] = useState<FormState>("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [activeTab, setActiveTab] = useState("vehicle");
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+
+  useEffect(() => { setHistory(loadHistory()); }, []);
 
   const methods = useForm<ReportFormData>({
     resolver: zodResolver(reportSchema),
@@ -43,7 +48,24 @@ export function TireReportForm() {
     },
   });
 
-  const { handleSubmit, reset } = methods;
+  const { handleSubmit, reset, formState: { errors } } = methods;
+
+  const tabsWithErrors = {
+    vehicle: !!(errors.brand || errors.model || errors.vin || errors.email),
+    FL: !!errors.tires?.FL,
+    FR: !!errors.tires?.FR,
+    RL: !!errors.tires?.RL,
+    RR: !!errors.tires?.RR,
+  };
+
+  function onInvalid(errs: typeof errors) {
+    setSubmitAttempted(true);
+    const hasVehicle = !!(errs.brand || errs.model || errs.vin || errs.email);
+    if (hasVehicle) { setActiveTab("vehicle"); return; }
+    for (const pos of TIRE_POSITIONS) {
+      if (errs.tires?.[pos]) { setActiveTab(pos); return; }
+    }
+  }
 
   async function onSubmit(data: ReportFormData) {
     setFormState("loading");
@@ -61,6 +83,7 @@ export function TireReportForm() {
       setFormState("error");
     } else {
       saveToHistory(data);
+      setHistory(loadHistory());
       setFormState("success");
     }
   }
@@ -70,6 +93,7 @@ export function TireReportForm() {
     setFormState("idle");
     setErrorMessage("");
     setActiveTab("vehicle");
+    setSubmitAttempted(false);
   }
 
   if (formState === "success") {
@@ -91,17 +115,22 @@ export function TireReportForm() {
   }
 
   return (
+    <>
     <FormProvider {...methods}>
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit, (errs) => onInvalid(errs))} noValidate className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-5 mb-6 !h-auto">
-            <TabsTrigger value="vehicle" className="py-3 text-xs sm:text-sm !h-auto">
+            <TabsTrigger value="vehicle"
+              className={`py-3 text-xs sm:text-sm !h-auto relative ${submitAttempted && tabsWithErrors.vehicle ? "ring-2 ring-red-500 ring-inset" : ""}`}>
               {t("vehicle")}
+              {submitAttempted && tabsWithErrors.vehicle && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-500" />}
             </TabsTrigger>
             {TIRE_POSITIONS.map((pos) => (
-              <TabsTrigger key={pos} value={pos} className="py-3 text-xs sm:text-sm !h-auto">
+              <TabsTrigger key={pos} value={pos}
+                className={`py-3 text-xs sm:text-sm !h-auto relative ${submitAttempted && tabsWithErrors[pos] ? "ring-2 ring-red-500 ring-inset" : ""}`}>
                 <span className="sm:hidden">{TIRE_LABELS_SHORT[pos]}</span>
                 <span className="hidden sm:inline">{pos}</span>
+                {submitAttempted && tabsWithErrors[pos] && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-500" />}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -137,14 +166,19 @@ export function TireReportForm() {
                       {t("next")}
                     </Button>
                   ) : (
-                    <Button type="submit" disabled={formState === "loading"}
-                      className="w-full sm:w-auto gap-2 bg-primary hover:bg-primary/90">
-                      {formState === "loading" ? (
-                        <><Loader2 className="w-4 h-4 animate-spin" />{t("submitting")}</>
-                      ) : (
-                        <><Send className="w-4 h-4" />{t("submit")}</>
+                    <div className="flex flex-col items-stretch sm:items-end gap-1">
+                      <Button type="submit" disabled={formState === "loading"}
+                        className="w-full sm:w-auto gap-2 bg-primary hover:bg-primary/90">
+                        {formState === "loading" ? (
+                          <><Loader2 className="w-4 h-4 animate-spin" />{t("submitting")}</>
+                        ) : (
+                          <><Send className="w-4 h-4" />{t("submit")}</>
+                        )}
+                      </Button>
+                      {submitAttempted && Object.values(tabsWithErrors).some(Boolean) && (
+                        <p className="text-xs text-red-600 text-center sm:text-right">{t("errorsExist")}</p>
                       )}
-                    </Button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -159,5 +193,7 @@ export function TireReportForm() {
         )}
       </form>
     </FormProvider>
+    <ReportHistory entries={history} onClear={() => setHistory([])} />
+  </>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useI18n } from "@/lib/i18n-context";
-import { ReportHistory } from "./ReportHistory";
 import { ReactNode } from "react";
 
 export function PageShell({ children }: { children: ReactNode }) {
@@ -20,7 +19,6 @@ export function PageShell({ children }: { children: ReactNode }) {
         <div className="bg-white border border-[#d0d7de] rounded-md shadow-sm p-4 sm:p-6">
           {children}
         </div>
-        <ReportHistory />
       </main>
 
       <footer className="border-t border-[#d0d7de] text-[#636c76] text-xs text-center py-4 mt-auto bg-[#f6f8fa]">

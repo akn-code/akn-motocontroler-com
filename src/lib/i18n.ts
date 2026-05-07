@@ -22,6 +22,8 @@ export const translations = {
     vehicleYear: "Rocznik",
     vehicleYearPlaceholder: "Wybierz rok",
     vehicleBrandPlaceholder: "Wybierz markę",
+    vehicleBrandOther: "Inna / własna",
+    vehicleBrandOtherPlaceholder: "Wpisz markę pojazdu",
     vin: "VIN",
     vinHint: "17 znaków, bez liter I, O, Q",
     email: "E-mail",
@@ -51,6 +53,7 @@ export const translations = {
     ratings: ["Bardzo zła", "Zła", "Dostateczna", "Dobra", "Bardzo dobra"],
     notes: "Uwagi",
     notesPlaceholder: "Dodatkowe obserwacje dotyczące opony...",
+    copyFrom: "Kopiuj z",
 
     // Buttons
     next: "Dalej →",
@@ -69,6 +72,8 @@ export const translations = {
     // History
     historyTitle: "Historia wysłanych raportów",
     historyClear: "Wyczyść",
+    historyView: "Szczegóły",
+    tiresSection: "Opony",
 
     // Auth
     loginTitle: "Logowanie",
@@ -90,6 +95,7 @@ export const translations = {
     errTreadDepth: "Podaj wartość w mm",
     errDot: "Format DOT: TTRR (tydzień 01-52 + rok, np. 2123)",
     errRating: "Wybierz ocenę 1-5",
+    errorsExist: "Popraw błędy w zaznaczonych zakładkach",
 
     // Footer
     footer: "System raportowania opon",
@@ -110,6 +116,8 @@ export const translations = {
     vehicleYear: "Year",
     vehicleYearPlaceholder: "Select year",
     vehicleBrandPlaceholder: "Select make",
+    vehicleBrandOther: "Other / custom",
+    vehicleBrandOtherPlaceholder: "Enter vehicle make",
     vin: "VIN",
     vinHint: "17 characters, letters I, O, Q not allowed",
     email: "E-mail",
@@ -138,6 +146,7 @@ export const translations = {
     ratings: ["Very poor", "Poor", "Fair", "Good", "Excellent"],
     notes: "Notes",
     notesPlaceholder: "Additional observations about the tire...",
+    copyFrom: "Copy from",
 
     next: "Next →",
     nextTires: "Next: Tires →",
@@ -153,6 +162,8 @@ export const translations = {
 
     historyTitle: "Submitted reports history",
     historyClear: "Clear",
+    historyView: "Details",
+    tiresSection: "Tires",
 
     loginTitle: "Sign in",
     loginDesc: "Sign in to access the inspection form.",
@@ -172,6 +183,7 @@ export const translations = {
     errTreadDepth: "Enter a value in mm",
     errDot: "DOT format: WWYR (week 01-52 + year, e.g. 2123)",
     errRating: "Select a rating from 1 to 5",
+    errorsExist: "Fix errors in the highlighted tabs",
 
     footer: "Tire reporting system",
   },

@@ -7,13 +7,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ReportFormData, getTreadWarning, TIRE_BRANDS } from "@/lib/schema";
 import { useI18n } from "@/lib/i18n-context";
-import { AlertTriangle, XCircle } from "lucide-react";
+import { AlertTriangle, XCircle, Copy } from "lucide-react";
 
 const TIRE_WIDTHS   = ["155","165","175","185","195","205","215","225","235","245","255","265","275","285","295","305","315","325"] as const;
 const TIRE_PROFILES = ["25","30","35","40","45","50","55","60","65","70","75","80"] as const;
 const TIRE_RIMS     = ["13","14","15","16","17","18","19","20","21","22","23"] as const;
+
+const POSITIONS = ["FL", "FR", "RL", "RR"] as const;
 
 const TIRE_LABEL_KEYS = {
   FL: "tireFL", FR: "tireFR", RL: "tireRL", RR: "tireRR",
@@ -23,17 +26,28 @@ interface TireSectionProps {
   position: "FL" | "FR" | "RL" | "RR";
 }
 
+function parseSize(size: string): { width: string; profile: string; rim: string } {
+  const m = size.match(/^(\d+)\/(\d+)\s*R(\d+)$/);
+  if (!m) return { width: "", profile: "", rim: "" };
+  return { width: m[1], profile: m[2], rim: m[3] };
+}
+
 export function TireSection({ position }: TireSectionProps) {
   const { t, tArr } = useI18n();
-  const { register, setValue, formState: { errors } } = useFormContext<ReportFormData>();
+  const { register, setValue, getValues, formState: { errors } } = useFormContext<ReportFormData>();
 
   const treadDepth = useWatch({ name: `tires.${position}.treadDepth` });
   const treadWarning = getTreadWarning(treadDepth ?? "");
   const tireErrors = errors.tires?.[position];
 
-  const [width, setWidth]     = useState("");
-  const [profile, setProfile] = useState("");
-  const [rim, setRim]         = useState("");
+  const initial = getValues(`tires.${position}`);
+  const initialSize = parseSize(initial?.size ?? "");
+
+  const [width, setWidth]     = useState(initialSize.width);
+  const [profile, setProfile] = useState(initialSize.profile);
+  const [rim, setRim]         = useState(initialSize.rim);
+  const [brand, setBrand]     = useState(initial?.brand ?? "");
+  const [rating, setRating]   = useState(initial?.rating ?? "");
 
   function updateSize(w: string, p: string, r: string) {
     if (w && p && r) {
@@ -46,16 +60,52 @@ export function TireSection({ position }: TireSectionProps) {
   function handleWidth(v: string | null)   { const val = v ?? ""; setWidth(val);   updateSize(val, profile, rim); }
   function handleProfile(v: string | null) { const val = v ?? ""; setProfile(val); updateSize(width, val, rim); }
   function handleRim(v: string | null)     { const val = v ?? ""; setRim(val);     updateSize(width, profile, val); }
+  function handleBrand(v: string | null)   { const val = v ?? ""; setBrand(val);   setValue(`tires.${position}.brand`, val, { shouldValidate: true }); }
+  function handleRating(v: string | null)  { const val = v ?? ""; setRating(val);  setValue(`tires.${position}.rating`, val, { shouldValidate: true }); }
+
+  function copyFrom(src: "FL" | "FR" | "RL" | "RR") {
+    const srcData = getValues(`tires.${src}`);
+    const parsed = parseSize(srcData.size ?? "");
+
+    setBrand(srcData.brand ?? "");
+    setValue(`tires.${position}.brand`, srcData.brand ?? "", { shouldValidate: true });
+
+    setWidth(parsed.width);
+    setProfile(parsed.profile);
+    setRim(parsed.rim);
+    setValue(`tires.${position}.size`, srcData.size ?? "", { shouldValidate: true });
+
+    setValue(`tires.${position}.treadDepth`, srcData.treadDepth ?? "", { shouldValidate: true });
+    setValue(`tires.${position}.dot`, srcData.dot ?? "", { shouldValidate: true });
+
+    setRating(srcData.rating ?? "");
+    setValue(`tires.${position}.rating`, srcData.rating ?? "", { shouldValidate: true });
+
+    setValue(`tires.${position}.notes`, srcData.notes ?? "");
+  }
 
   const ratings = tArr("ratings");
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold">
-          {position}
+      <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold">
+            {position}
+          </div>
+          <h3 className="font-semibold text-[#1f2328]">{t(TIRE_LABEL_KEYS[position])}</h3>
         </div>
-        <h3 className="font-semibold text-[#1f2328]">{t(TIRE_LABEL_KEYS[position])}</h3>
+        <div className="flex items-center gap-1 flex-wrap">
+          <Copy className="w-3.5 h-3.5 text-[#636c76]" />
+          <span className="text-xs text-[#636c76] mr-1">{t("copyFrom")}:</span>
+          {POSITIONS.filter(p => p !== position).map(src => (
+            <Button key={src} type="button" variant="outline" size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => copyFrom(src)}>
+              {src}
+            </Button>
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-4">
@@ -63,7 +113,7 @@ export function TireSection({ position }: TireSectionProps) {
         {/* Marka */}
         <div className="space-y-1">
           <Label htmlFor={`tires.${position}.brand`}>{t("tireBrand")}</Label>
-          <Select onValueChange={(v: string | null) => setValue(`tires.${position}.brand`, v ?? "", { shouldValidate: true })}>
+          <Select value={brand} onValueChange={handleBrand}>
             <SelectTrigger id={`tires.${position}.brand`}>
               <SelectValue placeholder={t("tireBrandPlaceholder")} />
             </SelectTrigger>
@@ -86,7 +136,7 @@ export function TireSection({ position }: TireSectionProps) {
           </Label>
           <div className="flex items-center gap-1 sm:gap-1.5">
             <div className="flex-1 min-w-0">
-              <Select onValueChange={handleWidth}>
+              <Select value={width} onValueChange={handleWidth}>
                 <SelectTrigger className="px-2 text-sm sm:text-xs">
                   <SelectValue placeholder={t("tireSizeWidth")} />
                 </SelectTrigger>
@@ -97,7 +147,7 @@ export function TireSection({ position }: TireSectionProps) {
             </div>
             <span className="text-[#636c76] text-base select-none shrink-0">/</span>
             <div className="flex-1 min-w-0">
-              <Select onValueChange={handleProfile}>
+              <Select value={profile} onValueChange={handleProfile}>
                 <SelectTrigger className="px-2 text-sm sm:text-xs">
                   <SelectValue placeholder={t("tireSizeProfile")} />
                 </SelectTrigger>
@@ -108,7 +158,7 @@ export function TireSection({ position }: TireSectionProps) {
             </div>
             <span className="text-[#636c76] text-base select-none shrink-0">R</span>
             <div className="flex-1 min-w-0">
-              <Select onValueChange={handleRim}>
+              <Select value={rim} onValueChange={handleRim}>
                 <SelectTrigger className="px-2 text-sm sm:text-xs">
                   <SelectValue placeholder={t("tireSizeRim")} />
                 </SelectTrigger>
@@ -126,7 +176,7 @@ export function TireSection({ position }: TireSectionProps) {
           <Label htmlFor={`tires.${position}.treadDepth`}>{t("treadDepth")}</Label>
           <Input
             id={`tires.${position}.treadDepth`}
-            type="number" step="0.1" min="0"
+            type="number" step="0.1" min="0" max="14"
             placeholder={t("treadDepthPlaceholder")}
             {...register(`tires.${position}.treadDepth`)}
           />
@@ -160,7 +210,7 @@ export function TireSection({ position }: TireSectionProps) {
         {/* Ocena */}
         <div className="space-y-1">
           <Label htmlFor={`tires.${position}.rating`}>{t("rating")}</Label>
-          <Select onValueChange={(v: string | null) => setValue(`tires.${position}.rating`, v ?? "", { shouldValidate: true })}>
+          <Select value={rating} onValueChange={handleRating}>
             <SelectTrigger id={`tires.${position}.rating`}>
               <SelectValue placeholder={t("ratingPlaceholder")} />
             </SelectTrigger>

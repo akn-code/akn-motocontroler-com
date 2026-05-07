@@ -1,6 +1,6 @@
 configs:
   init_sql:
-    file: ./docker/init.sql
+    file: ./init.sql
 
 secrets:
   auth_secret:
@@ -59,18 +59,19 @@ services:
     environment:
       DATABASE_URL: postgres://motocontroler@db:5432/motocontroler
       AUTH_TRUST_HOST: "true"
+      AUTH_URL: https://motocontroler.andrzej-nowicki.pl
     secrets:
       - source: auth_secret
-        target: AUTH_SECRET
+        target: auth_secret
       - source: db_password
-        target: DB_PASSWORD
+        target: db_password
     ports:
       - "4321:3000"
     networks:
       - frontend
       - backend
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/login || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

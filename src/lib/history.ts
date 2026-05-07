@@ -7,6 +7,7 @@ export interface HistoryEntry {
   model: string;
   year?: string;
   vin: string;
+  data: ReportFormData;
 }
 
 const STORAGE_KEY = "motocontroler_report_history";
@@ -20,6 +21,7 @@ export function saveToHistory(data: ReportFormData): void {
     model: data.model,
     year: data.year,
     vin: data.vin.toUpperCase(),
+    data,
   };
 
   const existing = loadHistory();
