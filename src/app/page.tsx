@@ -1,6 +1,5 @@
 import { auth } from "@/lib/auth";
 import { TireReportForm } from "@/components/TireReportForm";
-import { ReportHistory } from "@/components/ReportHistory";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 

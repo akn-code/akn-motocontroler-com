@@ -13,13 +13,17 @@ const tireSchema = z.object({
     .string()
     .min(1, "Głębokość bieżnika jest wymagana")
     .refine(
-      (v) => !isNaN(parseFloat(v)) && parseFloat(v) >= 0,
-      "Podaj wartość w mm"
+      (v) => !isNaN(parseFloat(v)) && parseFloat(v) >= 0 && parseFloat(v) <= 14,
+      "Podaj wartość w mm (0–14)"
     ),
   dot: z
     .string()
     .min(1, "DOT jest wymagany")
-    .regex(dotRegex, "Format DOT: TTRR (tydzień 01-52 + rok, np. 2123)"),
+    .regex(dotRegex, "Format DOT: TTRR (tydzień 01-52 + rok, np. 2123)")
+    .refine((v) => {
+      const year = 2000 + parseInt(v.slice(2), 10);
+      return year <= new Date().getFullYear();
+    }, "Rok produkcji nie może być z przyszłości"),
   rating: z
     .string()
     .min(1, "Ocena jest wymagana")

@@ -58,21 +58,13 @@ create_secret "db_password" "Enter database password" "false"
 info "Building image ${FULL_IMAGE}..."
 docker build -t "${FULL_IMAGE}" "${PROJECT_DIR}"
 
-# Deploy or update stack
-if docker stack ps "${STACK_NAME}" &>/dev/null 2>&1; then
-  info "Stack '${STACK_NAME}' already running — updating app service..."
-  docker service update \
-    --image "${FULL_IMAGE}" \
-    --with-registry-auth \
-    "${STACK_NAME}_app"
-else
-  info "Deploying stack '${STACK_NAME}'..."
-  cd "${PROJECT_DIR}"
-  APP_IMAGE="${FULL_IMAGE}" docker stack deploy \
-    --compose-file docker/docker-stack.yml \
-    --with-registry-auth \
-    "${STACK_NAME}"
-fi
+# Deploy or update stack (docker stack deploy is idempotent — handles both cases)
+info "Deploying stack '${STACK_NAME}'..."
+cd "${PROJECT_DIR}"
+APP_IMAGE="${FULL_IMAGE}" docker stack deploy \
+  --compose-file docker/docker-stack.yml \
+  --with-registry-auth \
+  "${STACK_NAME}"
 
 # Wait for service to stabilize
 info "Waiting for services to stabilize..."
