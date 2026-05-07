@@ -30,6 +30,7 @@ const tireSchema = z.object({
 export const reportSchema = z.object({
   brand: z.string().min(1, "Marka pojazdu jest wymagana"),
   model: z.string().min(1, "Model pojazdu jest wymagany"),
+  year: z.string().optional(),
   vin: z
     .string()
     .length(17, "VIN musi mieć dokładnie 17 znaków")
@@ -56,3 +57,29 @@ export function getTreadWarning(depth: string): "legal" | "low" | null {
   if (val < TREAD_WARNING_THRESHOLD) return "low";
   return null;
 }
+
+export const TIRE_BRANDS = [
+  "Bridgestone",
+  "Continental",
+  "Dunlop",
+  "Falken",
+  "Firestone",
+  "Goodyear",
+  "Hankook",
+  "Kumho",
+  "Maxxis",
+  "Michelin",
+  "Nexen",
+  "Nokian",
+  "Pirelli",
+  "Toyo",
+  "Uniroyal",
+  "Yokohama",
+  "Inna",
+] as const;
+
+export const CURRENT_YEAR = new Date().getFullYear();
+export const VEHICLE_YEARS = Array.from(
+  { length: CURRENT_YEAR - 1979 },
+  (_, i) => String(CURRENT_YEAR - i)
+);

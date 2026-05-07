@@ -18,12 +18,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { brand, model, vin, email, tires } = parsed.data;
+  const { brand, model, year, vin, email, tires } = parsed.data;
 
   await pool.query(
-    `INSERT INTO tire_reports (brand, model, vin, email, tires)
-     VALUES ($1, $2, $3, $4, $5)`,
-    [brand, model, vin.toUpperCase(), email || null, JSON.stringify(tires)]
+    `INSERT INTO tire_reports (brand, model, year, vin, email, tires)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [brand, model, year || null, vin.toUpperCase(), email || null, JSON.stringify(tires)]
   );
 
   return NextResponse.json({ success: true }, { status: 201 });
