@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { reportSchema, ReportFormData } from "@/lib/schema";
+import { saveToHistory } from "@/lib/history";
+import { useI18n } from "@/lib/i18n-context";
 import { VehicleSection } from "./VehicleSection";
 import { TireSection } from "./TireSection";
 import { Button } from "@/components/ui/button";
@@ -22,6 +24,7 @@ const TIRE_LABELS_SHORT: Record<string, string> = {
 };
 
 export function TireReportForm() {
+  const { t } = useI18n();
   const [formState, setFormState] = useState<FormState>("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [activeTab, setActiveTab] = useState("vehicle");
@@ -30,10 +33,7 @@ export function TireReportForm() {
     resolver: zodResolver(reportSchema),
     mode: "onTouched",
     defaultValues: {
-      brand: "",
-      model: "",
-      vin: "",
-      email: "",
+      brand: "", model: "", year: "", vin: "", email: "",
       tires: {
         FL: { brand: "", size: "", treadDepth: "", dot: "", rating: "", notes: "" },
         FR: { brand: "", size: "", treadDepth: "", dot: "", rating: "", notes: "" },
@@ -57,9 +57,10 @@ export function TireReportForm() {
 
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
-      setErrorMessage(json.error ?? "Wystąpił błąd podczas wysyłania raportu.");
+      setErrorMessage(json.error ?? t("errorGeneric"));
       setFormState("error");
     } else {
+      saveToHistory(data);
       setFormState("success");
     }
   }
@@ -78,14 +79,12 @@ export function TireReportForm() {
           <CheckCircle2 className="w-10 h-10 text-green-600" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-bold text-gray-900">Raport wysłany!</h2>
-          <p className="text-muted-foreground max-w-sm">
-            Dziękujemy. Raport opon został pomyślnie zapisany w systemie Motocontroler.
-          </p>
+          <h2 className="text-2xl font-bold text-[#1f2328]">{t("successTitle")}</h2>
+          <p className="text-muted-foreground max-w-sm">{t("successDesc")}</p>
         </div>
         <Button onClick={handleReset} variant="outline" className="gap-2">
           <RotateCcw className="w-4 h-4" />
-          Dodaj kolejny raport
+          {t("addAnother")}
         </Button>
       </div>
     );
@@ -95,12 +94,12 @@ export function TireReportForm() {
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5 mb-6">
-            <TabsTrigger value="vehicle" className="text-xs sm:text-sm">
-              Pojazd
+          <TabsList className="grid w-full grid-cols-5 mb-6 !h-auto">
+            <TabsTrigger value="vehicle" className="py-3 text-xs sm:text-sm !h-auto">
+              {t("vehicle")}
             </TabsTrigger>
             {TIRE_POSITIONS.map((pos) => (
-              <TabsTrigger key={pos} value={pos} className="text-xs sm:text-sm">
+              <TabsTrigger key={pos} value={pos} className="py-3 text-xs sm:text-sm !h-auto">
                 <span className="sm:hidden">{TIRE_LABELS_SHORT[pos]}</span>
                 <span className="hidden sm:inline">{pos}</span>
               </TabsTrigger>
@@ -108,14 +107,14 @@ export function TireReportForm() {
           </TabsList>
 
           <TabsContent value="vehicle">
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                Dane pojazdu
+            <div className="space-y-5">
+              <h2 className="text-base font-semibold text-[#1f2328] border-b border-[#d0d7de] pb-2">
+                {t("vehicleSection")}
               </h2>
               <VehicleSection />
-              <div className="flex justify-end pt-2">
-                <Button type="button" onClick={() => setActiveTab("FL")}>
-                  Dalej: Opony
+              <div className="pt-1">
+                <Button type="button" onClick={() => setActiveTab("FL")} className="w-full md:w-auto">
+                  {t("nextTires")}
                 </Button>
               </div>
             </div>
@@ -123,41 +122,27 @@ export function TireReportForm() {
 
           {TIRE_POSITIONS.map((pos, idx) => (
             <TabsContent key={pos} value={pos}>
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <TireSection position={pos} />
-                <div className="flex justify-between pt-2">
+                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between pt-1">
                   <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() =>
-                      setActiveTab(idx === 0 ? "vehicle" : TIRE_POSITIONS[idx - 1])
-                    }
+                    type="button" variant="outline" className="w-full sm:w-auto"
+                    onClick={() => setActiveTab(idx === 0 ? "vehicle" : TIRE_POSITIONS[idx - 1])}
                   >
-                    Wstecz
+                    {t("back")}
                   </Button>
                   {idx < TIRE_POSITIONS.length - 1 ? (
-                    <Button
-                      type="button"
-                      onClick={() => setActiveTab(TIRE_POSITIONS[idx + 1])}
-                    >
-                      Dalej
+                    <Button type="button" className="w-full sm:w-auto"
+                      onClick={() => setActiveTab(TIRE_POSITIONS[idx + 1])}>
+                      {t("next")}
                     </Button>
                   ) : (
-                    <Button
-                      type="submit"
-                      disabled={formState === "loading"}
-                      className="gap-2 bg-primary hover:bg-primary/90"
-                    >
+                    <Button type="submit" disabled={formState === "loading"}
+                      className="w-full sm:w-auto gap-2 bg-primary hover:bg-primary/90">
                       {formState === "loading" ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Wysyłanie...
-                        </>
+                        <><Loader2 className="w-4 h-4 animate-spin" />{t("submitting")}</>
                       ) : (
-                        <>
-                          <Send className="w-4 h-4" />
-                          Wyślij raport
-                        </>
+                        <><Send className="w-4 h-4" />{t("submit")}</>
                       )}
                     </Button>
                   )}
@@ -169,7 +154,7 @@ export function TireReportForm() {
 
         {formState === "error" && (
           <div className="rounded-md bg-red-50 border border-red-200 p-4 text-sm text-red-700">
-            <strong>Błąd:</strong> {errorMessage}
+            <strong>{t("errorPrefix")}</strong> {errorMessage}
           </div>
         )}
       </form>

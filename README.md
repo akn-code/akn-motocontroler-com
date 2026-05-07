@@ -17,7 +17,7 @@ cd akn-motocontroler-com
 docker compose up --build
 ```
 
-Aplikacja działa pod `http://localhost:3000`.
+Aplikacja działa pod `http://localhost:4321`.
 
 Przy pierwszym uruchomieniu Docker automatycznie:
 - pobiera obraz `postgres:16-alpine`,
@@ -68,7 +68,7 @@ npm install
 npm run dev
 ```
 
-Aplikacja: `http://localhost:3000`
+Aplikacja: `http://localhost:4321`
 
 ---
 
@@ -76,7 +76,7 @@ Aplikacja: `http://localhost:3000`
 
 | Warstwa | Technologia |
 |---|---|
-| Frontend | Next.js 16 (App Router) |
+| Frontend | Next.js 15 (App Router) |
 | Stylizacja | Tailwind CSS + shadcn/ui |
 | Formularz | react-hook-form + Zod |
 | API | Next.js Route Handler `POST /api/reports` |
@@ -103,7 +103,7 @@ CREATE TABLE tire_reports (
 
 | Zmienna | Opis | Wartość domyślna (Docker) |
 |---|---|---|
-| `DATABASE_URL` | Connection string PostgreSQL | `postgres://motocontroler:motocontroler@db:5432/motocontroler` |
+| `DATABASE_URL` | Connection string PostgreSQL | `postgres://motocontroler:motocontroler@localhost:6543/motocontroler` |
 
 Przy uruchomieniu przez `docker compose` zmienna jest ustawiana automatycznie. W trybie deweloperskim skopiuj `.env.local.example` do `.env.local`.
 
@@ -116,3 +116,8 @@ Przy uruchomieniu przez `docker compose` zmienna jest ustawiana automatycznie. W
 | Głębokość bieżnika | Ostrzeżenie przy < 3 mm, alert przy < 1,6 mm (nie blokuje wysyłki) |
 | Rozmiar opony | Format `205/55 R16` |
 | Ocena | 1–5 (wymagana) |
+
+## License
+
+This project is licensed under the **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)**. 
+Commercial use of this software is strictly prohibited without explicit permission. See the [LICENSE](LICENSE) file for details.
