@@ -1,36 +1,118 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Motocontroler — Formularz Raportu Opon
 
-## Getting Started
+Publiczny formularz webowy dla rzeczoznawców do rejestrowania raportów opon badanych pojazdów.
 
-First, run the development server:
+## Wymagania
+
+- [Docker](https://docs.docker.com/get-docker/) i Docker Compose v2
+
+## Uruchomienie
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# 1. Sklonuj repozytorium
+git clone <repo-url>
+cd akn-motocontroler-com
+
+# 2. Zbuduj i uruchom
+docker compose up --build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Aplikacja działa pod `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Przy pierwszym uruchomieniu Docker automatycznie:
+- pobiera obraz `postgres:16-alpine`,
+- tworzy bazę danych i tabelę `tire_reports` z pliku `init.sql`,
+- buduje obraz Next.js i czeka na gotowość bazy przed startem.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Uruchamianie w tle
 
-## Learn More
+```bash
+docker compose up --build -d
+```
 
-To learn more about Next.js, take a look at the following resources:
+### Zatrzymanie
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+docker compose down
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Dane Postgresa są przechowywane w wolumenie Docker (`postgres_data`) i przetrwają restart kontenerów. Aby usunąć też dane:
 
-## Deploy on Vercel
+```bash
+docker compose down -v
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Przebudowanie po zmianach w kodzie
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+docker compose up --build
+```
+
+---
+
+## Uruchomienie bez Dockera (tryb deweloperski)
+
+Wymaga Node.js 20+ oraz lokalnej instancji PostgreSQL lub uruchomienia samej bazy przez Docker.
+
+```bash
+# Uruchom tylko PostgreSQL
+docker compose up db -d
+
+# Skopiuj i uzupełnij zmienne środowiskowe
+cp .env.local.example .env.local
+
+# Zainstaluj zależności
+npm install
+
+# Uruchom serwer deweloperski
+npm run dev
+```
+
+Aplikacja: `http://localhost:3000`
+
+---
+
+## Stack technologiczny
+
+| Warstwa | Technologia |
+|---|---|
+| Frontend | Next.js 16 (App Router) |
+| Stylizacja | Tailwind CSS + shadcn/ui |
+| Formularz | react-hook-form + Zod |
+| API | Next.js Route Handler `POST /api/reports` |
+| Baza danych | PostgreSQL 16 |
+| Konteneryzacja | Docker + Docker Compose |
+
+## Schemat bazy danych
+
+Tabela `tire_reports` tworzona automatycznie przez [init.sql](init.sql):
+
+```sql
+CREATE TABLE tire_reports (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  brand      TEXT NOT NULL,
+  model      TEXT NOT NULL,
+  vin        TEXT NOT NULL,
+  email      TEXT,
+  tires      JSONB NOT NULL   -- dane 4 opon (FL, FR, RL, RR)
+);
+```
+
+## Zmienne środowiskowe
+
+| Zmienna | Opis | Wartość domyślna (Docker) |
+|---|---|---|
+| `DATABASE_URL` | Connection string PostgreSQL | `postgres://motocontroler:motocontroler@db:5432/motocontroler` |
+
+Przy uruchomieniu przez `docker compose` zmienna jest ustawiana automatycznie. W trybie deweloperskim skopiuj `.env.local.example` do `.env.local`.
+
+## Walidacje formularza
+
+| Pole | Reguła |
+|---|---|
+| VIN | Dokładnie 17 znaków, bez liter I, O, Q |
+| DOT | 4 cyfry TTRR — tydzień (01–52) + rok, np. `2123` |
+| Głębokość bieżnika | Ostrzeżenie przy < 3 mm, alert przy < 1,6 mm (nie blokuje wysyłki) |
+| Rozmiar opony | Format `205/55 R16` |
+| Ocena | 1–5 (wymagana) |
