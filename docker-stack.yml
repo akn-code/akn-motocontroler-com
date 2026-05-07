@@ -1,0 +1,98 @@
+configs:
+  init_sql:
+    file: ./init.sql
+
+secrets:
+  auth_secret:
+    external: true
+  db_password:
+    external: true
+
+networks:
+  frontend:
+    driver: overlay
+  backend:
+    driver: overlay
+    internal: true
+
+volumes:
+  postgres_data:
+    driver: local
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: motocontroler
+      POSTGRES_USER: motocontroler
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    configs:
+      - source: init_sql
+        target: /docker-entrypoint-initdb.d/init.sql
+        mode: 0444
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U motocontroler"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      update_config:
+        order: stop-first
+
+  app:
+    image: ${APP_IMAGE:-ghcr.io/your-org/akn-motocontroler-com:latest}
+    environment:
+      DATABASE_URL: postgres://motocontroler@db:5432/motocontroler
+      AUTH_TRUST_HOST: "true"
+    secrets:
+      - source: auth_secret
+        target: AUTH_SECRET
+      - source: db_password
+        target: DB_PASSWORD
+    ports:
+      - "4321:3000"
+    networks:
+      - frontend
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 15s
+        order: start-first
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        order: stop-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
